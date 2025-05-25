@@ -1,0 +1,21 @@
+Qube-Gaming Privacy.
+
+We do not take any user data such as Email, Phone number, Location, IP etc.
+The user's email is shown to us when the user emails us, we do not store that email locally or in the cloud.
+We use the services:
+> Google Analytics™
+
+We collect the user's session, view and active data in the analytics.
+Our website has Recaptcha which is implemented by Glitch, this helps us fight against robots infecting our site. However this does not collect user personal data.
+
+Our mobile app uses:
+> Your internet connection.
+
+It does not have any permission for camera or microphone.
+
+We use trusted Apis to build our website ensuring user privacy and safety when play games in our site.
+We strongly agree with your country/state privacy laws
+
+We also follow EU GDPR (General Data Protection Regulation)
+
+©Qube-gaming 2025-2025

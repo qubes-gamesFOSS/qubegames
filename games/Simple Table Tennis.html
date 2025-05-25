@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<!-- saved from url=(0061)https://qube-gaming-website.glitch.me/games/table-tennis.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Table Tennis</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #222;
+            margin: 0;
+            font-family: sans-serif;
+            color: white;
+        }
+        canvas {
+            background-color: #006400; /* Dark green background for the table */
+            border: 5px solid #ddd;
+            display: block;
+        }
+        #gameContainer {
+            text-align: center;
+        }
+        #score {
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="score">Player 1: 0 | Player 2: 0</div>
+        <canvas id="gameCanvas" width="600" height="400"></canvas>
+    </div>
+
+    <script>
+        // Get the canvas and its context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game variables
+        const paddleWidth = 10;
+        const paddleHeight = 80;
+        const ballSize = 10;
+        let player1Score = 0;
+        let player2Score = 0;
+
+        // Paddle positions
+        let player1Y = canvas.height / 2 - paddleHeight / 2;
+        let player2Y = canvas.height / 2 - paddleHeight / 2; // AI paddle
+
+        // Ball position and speed
+        let ballX = canvas.width / 2;
+        let ballY = canvas.height / 2;
+        let ballSpeedX = 5;
+        let ballSpeedY = 5;
+
+        // Keyboard input
+        let upPressed = false;
+        let downPressed = false;
+
+        // Event listeners for keyboard input
+        document.addEventListener('keydown', keyDownHandler);
+        document.addEventListener('keyup', keyUpHandler);
+
+        function keyDownHandler(event) {
+            if (event.key === 'ArrowUp') {
+                upPressed = true;
+            } else if (event.key === 'ArrowDown') {
+                downPressed = true;
+            }
+        }
+
+        function keyUpHandler(event) {
+            if (event.key === 'ArrowUp') {
+                upPressed = false;
+            } else if (event.key === 'ArrowDown') {
+                downPressed = false;
+            }
+        }
+
+        // Function to draw elements
+        function drawRect(x, y, width, height, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, width, height);
+        }
+
+        function drawCircle(x, y, radius, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2, false);
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawText(text, x, y, color) {
+            ctx.fillStyle = color;
+            ctx.font = '20px sans-serif';
+            ctx.fillText(text, x, y);
+        }
+
+        // Function to reset the ball position after a score
+        function resetBall() {
+            ballX = canvas.width / 2;
+            ballY = canvas.height / 2;
+            // Reverse direction for variety after a score
+            ballSpeedX = -ballSpeedX;
+            ballSpeedY = 5; // Reset vertical speed
+        }
+
+        // Function to update game state
+        function update() {
+            // Move player paddle
+            if (upPressed && player1Y > 0) {
+                player1Y -= 10; // Increased paddle speed
+            } else if (downPressed && player1Y + paddleHeight < canvas.height) {
+                player1Y += 10; // Increased paddle speed
+            }
+
+            // Simple AI for player 2 paddle
+            // Player 2 tries to follow the ball's vertical position
+            if (player2Y + paddleHeight / 2 < ballY && player2Y + paddleHeight < canvas.height) {
+                 player2Y += 4; // AI speed
+            } else if (player2Y + paddleHeight / 2 > ballY && player2Y > 0) {
+                 player2Y -= 4; // AI speed
+            }
+
+            // Move the ball
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+
+            // Ball collision with top/bottom walls
+            if (ballY - ballSize < 0 || ballY + ballSize > canvas.height) {
+                ballSpeedY = -ballSpeedY;
+            }
+
+            // Ball collision with paddles
+            // Player 1 paddle
+            if (ballX - ballSize < paddleWidth && ballY > player1Y && ballY < player1Y + paddleHeight) {
+                ballSpeedX = -ballSpeedX;
+                 // Adjust vertical speed based on where the ball hit the paddle
+                let hitPoint = ballY - (player1Y + paddleHeight / 2);
+                ballSpeedY = hitPoint * 0.3; // Adjust multiplier for desired effect
+            }
+
+            // Player 2 paddle (AI)
+            if (ballX + ballSize > canvas.width - paddleWidth && ballY > player2Y && ballY < player2Y + paddleHeight) {
+                ballSpeedX = -ballSpeedX;
+                 // Adjust vertical speed based on where the ball hit the paddle
+                let hitPoint = ballY - (player2Y + paddleHeight / 2);
+                ballSpeedY = hitPoint * 0.3; // Adjust multiplier for desired effect
+            }
+
+            // Scoring logic: check if the ball passes a paddle
+            if (ballX - ballSize < 0) { // Ball passed player 1's paddle
+                player2Score++;
+                document.getElementById('score').innerText = `Player 1: ${player1Score} | Player 2: ${player2Score}`;
+                resetBall(); // Reset ball after score
+            } else if (ballX + ballSize > canvas.width) { // Ball passed player 2's paddle
+                player1Score++;
+                document.getElementById('score').innerText = `Player 1: ${player1Score} | Player 2: ${player2Score}`;
+                resetBall(); // Reset ball after score
+            }
+        }
+
+        // Function to draw everything
+        function draw() {
+            // Clear the canvas
+            drawRect(0, 0, canvas.width, canvas.height, '#006400'); // Redraw background
+
+            // Draw paddles
+            drawRect(0, player1Y, paddleWidth, paddleHeight, 'white');
+            drawRect(canvas.width - paddleWidth, player2Y, paddleWidth, paddleHeight, 'white');
+
+            // Draw ball
+            drawCircle(ballX, ballY, ballSize, 'white');
+
+            // Draw middle line (optional)
+            for(let i = 0; i < canvas.height; i += 20) {
+                drawRect(canvas.width / 2 - 1, i, 2, 10, 'white');
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop); // Call gameLoop again for the next frame
+        }
+
+        // Start the game loop when the window loads
+        window.onload = function() {
+            gameLoop();
+        };
+
+    </script>
+
+
+</body></html>

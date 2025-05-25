@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Bedwars</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #1a202c; /* Tailwind gray-900 */
+            color: #e2e8f0; /* Tailwind gray-300 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+            line-height: 1.6;
+            position: relative; /* Needed for absolute positioning of game over screen */
+        }
+        .main-layout {
+            display: flex;
+            flex-direction: column; /* Default to column on small screens */
+            width: 100%;
+            max-width: 1200px; /* Increased max-width to accommodate side log */
+            gap: 1.5rem; /* Space between game area and log */
+        }
+        .game-area {
+            flex-grow: 1;
+            background-color: #2d3748; /* Tailwind gray-800 */
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 100%; /* Take full width on small screens */
+            max-width: 800px; /* Max width for the game area itself */
+            margin: 0 auto; /* Center the game area on small screens */
+        }
+        .player-section {
+            background-color: #4a5568; /* Tailwind gray-700 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .player-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #63b3ed; /* Tailwind blue-400 */
+        }
+        .ai-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #f56565; /* Tailwind red-400 */
+        }
+        .resource, .status {
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+        .bed-health-bar {
+            background-color: #718096; /* Tailwind gray-500 */
+            border-radius: 0.25rem;
+            padding: 2px;
+            height: 20px;
+            margin-bottom: 0.5rem;
+            border: 1px solid #a0aec0; /* Tailwind gray-400 */
+        }
+        .bed-health-fill {
+            background-color: #48bb78; /* Tailwind green-500 */
+            height: 100%;
+            border-radius: 0.125rem;
+            transition: width 0.3s ease-in-out;
+        }
+        .btn {
+            background-color: #4299e1; /* Tailwind blue-500 */
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem; /* Smaller font for buttons */
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #2b6cb0; /* Tailwind blue-700 */
+        }
+        .btn:disabled {
+            background-color: #a0aec0; /* Tailwind gray-400 */
+            cursor: not-allowed;
+        }
+        .btn-attack { background-color: #f56565; /* Tailwind red-500 */ }
+        .btn-attack:hover { background-color: #c53030; /* Tailwind red-700 */ }
+        .btn-defend { background-color: #48bb78; /* Tailwind green-500 */ }
+        .btn-defend:hover { background-color: #2f855a; /* Tailwind green-700 */ }
+        .btn-steal { background-color: #ecc94b; /* Tailwind yellow-500 */ color: #2d3748; }
+        .btn-steal:hover { background-color: #d69e2e; /* Tailwind yellow-600 */ }
+
+        .game-log {
+            background-color: #1a202c; /* Tailwind gray-900 */
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            margin-top: 1rem; /* Margin on top for mobile */
+            height: 150px; /* Increased height for mobile */
+            overflow-y: auto;
+            font-size: 0.75rem;
+            border: 1px solid #4a5568; /* Tailwind gray-700 */
+            flex-shrink: 0; /* Prevent log from shrinking on desktop */
+        }
+        .log-message {
+            margin-bottom: 0.25rem;
+        }
+        .log-player { color: #63b3ed; } /* Tailwind blue-400 */
+        .log-ai { color: #f56565; } /* Tailwind red-400 */
+        .log-system { color: #9f7aea; } /* Tailwind purple-400 */
+        .log-resource { color: #ecc94b; } /* Tailwind yellow-400 */
+
+        /* Game Over Screen Styles */
+        .game-over-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent black overlay */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10; /* Ensure it's on top of game content */
+            text-align: center;
+            font-size: 2rem;
+            color: white;
+            backdrop-filter: blur(5px); /* Optional blur effect */
+            -webkit-backdrop-filter: blur(5px); /* Safari support */
+        }
+        .game-over-screen h2 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .game-over-screen .btn {
+            margin-top: 1.5rem;
+            font-size: 1rem;
+            padding: 0.75rem 1.5rem;
+        }
+        .hidden {
+            display: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .game-area { padding: 1rem; }
+            .player-section { padding: 0.75rem; }
+            .btn { width: calc(50% - 0.25rem); margin-right: 0; } /* Two buttons per row */
+            .btn:nth-child(odd) { margin-right: 0.5rem; }
+            .player-actions { display: flex; flex-wrap: wrap; }
+            .game-log {
+                 margin-top: 1rem; /* Ensure margin is present on mobile */
+                 height: 150px; /* Fixed height on mobile */
+            }
+             .game-over-screen h2 {
+                font-size: 2rem;
+            }
+             .game-over-screen .btn {
+                font-size: 0.875rem;
+                padding: 0.6rem 1.2rem;
+            }
+        }
+
+        /* Desktop layout */
+        @media (min-width: 1024px) { /* Adjust breakpoint as needed */
+            .main-layout {
+                flex-direction: row; /* Row layout on desktop */
+                align-items: flex-start; /* Align items to the top */
+            }
+            .game-area {
+                max-width: 800px; /* Keep game area max width */
+                margin: 0; /* Remove auto margin on desktop */
+            }
+            .game-log {
+                margin-top: 0; /* Remove top margin on desktop */
+                width: 350px; /* Fixed width for the log on desktop */
+                height: auto; /* Allow height to adjust based on content, or set a max-height */
+                max-height: 600px; /* Example max-height for desktop */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-layout" id="game-container">
+        <div class="game-area">
+            <h1 class="text-2xl text-center mb-6 text-yellow-400">Simple Bedwars</h1>
+
+            <div id="player-section" class="player-section">
+                <h2 class="player-title">Your Base</h2>
+                <div class="status">Bed Health: <span id="player-bed-health-value">100</span>/100</div>
+                <div class="bed-health-bar"><div id="player-bed-health-bar-fill" class="bed-health-fill"></div></div>
+                <div class="status">Player Health: <span id="player-health">100</span>/100</div>
+                <div class="resource">Iron: <span id="player-iron">50</span></div>
+                <div class="resource">Gold: <span id="player-gold">10</span></div>
+                <div class="mt-4 player-actions">
+                    <button id="attack-enemy-bed-btn" class="btn btn-attack">Attack Bed (15 Iron)</button>
+                    <button id="attack-enemy-player-btn" class="btn btn-attack" disabled>Attack Player (10 Iron, 5 Gold)</button>
+                    <button id="fortify-bed-btn" class="btn btn-defend">Fortify Bed (20 Iron, 5 Gold)</button>
+                    <button id="raid-resources-btn" class="btn btn-steal">Raid Resources</button>
+                </div>
+            </div>
+
+            <div id="ai-section" class="player-section">
+                <h2 class="ai-title">CPU Base</h2>
+                <div class="status">Bed Health: <span id="ai-bed-health-value">100</span>/100</div>
+                <div class="bed-health-bar"><div id="ai-bed-health-bar-fill" class="bed-health-fill"></div></div>
+                <div class="status">CPU Health: <span id="ai-health">100</span>/100</div>
+                <div class="resource">Iron: <span id="ai-iron">50</span></div>
+                <div class="resource">Gold: <span id="ai-gold">10</span></div>
+            </div>
+
+            <button id="reset-game-btn" class="btn mt-6 w-full bg-indigo-500 hover:bg-indigo-700">Reset Game</button>
+        </div>
+
+        <div class="game-log" id="game-log">
+            <div class="log-message log-system">Game Started! Protect your bed!</div>
+        </div>
+    </div>
+
+    <div id="win-screen" class="game-over-screen hidden">
+        <h2 class="text-green-400">You Win!</h2>
+        <p>Congratulations, you defeated the CPU!</p>
+        <button class="btn reset-game-over-btn">Play Again?</button>
+    </div>
+
+    <div id="lose-screen" class="game-over-screen hidden">
+        <h2 class="text-red-400">You Lose!</h2>
+        <p>Your bed was destroyed and you were defeated.</p>
+        <button class="btn reset-game-over-btn">Try Again?</button>
+    </div>
+
+
+    <script>
+        let player = {
+            health: 100,
+            bedHealth: 100,
+            maxBedHealth: 100,
+            iron: 50,
+            gold: 10,
+            bedDestroyed: false
+        };
+
+        let ai = {
+            health: 100,
+            bedHealth: 100,
+            maxBedHealth: 100,
+            iron: 50,
+            gold: 10,
+            bedDestroyed: false
+        };
+
+        const MAX_LOG_MESSAGES = 10;
+        let gameLog = [];
+        let gameOver = false;
+        let resourceInterval;
+
+
+        const playerHealthEl = document.getElementById('player-health');
+        const playerBedHealthValueEl = document.getElementById('player-bed-health-value');
+        const playerBedHealthBarFillEl = document.getElementById('player-bed-health-bar-fill');
+        const playerIronEl = document.getElementById('player-iron');
+        const playerGoldEl = document.getElementById('player-gold');
+
+        const aiHealthEl = document.getElementById('ai-health');
+        const aiBedHealthValueEl = document.getElementById('ai-bed-health-value');
+        const aiBedHealthBarFillEl = document.getElementById('ai-bed-health-bar-fill');
+        const aiIronEl = document.getElementById('ai-iron');
+        const aiGoldEl = document.getElementById('ai-gold');
+
+        const gameLogEl = document.getElementById('game-log');
+        const gameContainerEl = document.getElementById('game-container');
+
+        const attackEnemyBedBtn = document.getElementById('attack-enemy-bed-btn');
+        const attackEnemyPlayerBtn = document.getElementById('attack-enemy-player-btn');
+        const fortifyBedBtn = document.getElementById('fortify-bed-btn');
+        const raidResourcesBtn = document.getElementById('raid-resources-btn');
+        const resetGameBtn = document.getElementById('reset-game-btn');
+
+        const winScreenEl = document.getElementById('win-screen');
+        const loseScreenEl = document.getElementById('lose-screen');
+        const resetGameOverBtns = document.querySelectorAll('.reset-game-over-btn');
+
+        const COSTS = {
+            ATTACK_BED: { iron: 15 },
+            ATTACK_PLAYER: { iron: 10, gold: 5 },
+            FORTIFY_BED: { iron: 20, gold: 5 },
+            AI_FORTIFY_BED: { iron: 20 } // AI might have different costs or simpler logic
+        };
+        const PLAYER_DAMAGE = {
+            BED_ATTACK: 25,
+            PLAYER_ATTACK: 20,
+        };
+        const AI_DAMAGE = {
+            BED_ATTACK: 25,
+            PLAYER_ATTACK: 20,
+        };
+        const FORTIFY_HEAL_AMOUNT = 30;
+        const RAID_PERCENTAGE = { iron: 0.20, gold: 0.15 };
+
+        function updateUI() {
+            playerHealthEl.textContent = player.health;
+            playerBedHealthValueEl.textContent = player.bedHealth;
+            playerBedHealthBarFillEl.style.width = `${(player.bedHealth / player.maxBedHealth) * 100}%`;
+            playerBedHealthBarFillEl.style.backgroundColor = getHealthColor(player.bedHealth, player.maxBedHealth);
+            playerIronEl.textContent = player.iron;
+            playerGoldEl.textContent = player.gold;
+
+            aiHealthEl.textContent = ai.health;
+            aiBedHealthValueEl.textContent = ai.bedHealth;
+            aiBedHealthBarFillEl.style.width = `${(ai.bedHealth / ai.maxBedHealth) * 100}%`;
+            aiBedHealthBarFillEl.style.backgroundColor = getHealthColor(ai.bedHealth, ai.maxBedHealth);
+            aiIronEl.textContent = ai.iron;
+            aiGoldEl.textContent = ai.gold;
+
+            attackEnemyBedBtn.disabled = gameOver || player.iron < COSTS.ATTACK_BED.iron || ai.bedDestroyed;
+            attackEnemyPlayerBtn.disabled = gameOver || !ai.bedDestroyed || player.iron < COSTS.ATTACK_PLAYER.iron || player.gold < COSTS.ATTACK_PLAYER.gold || ai.health <= 0;
+            fortifyBedBtn.disabled = gameOver || player.bedDestroyed || player.iron < COSTS.FORTIFY_BED.iron || player.gold < COSTS.FORTIFY_BED.gold || player.bedHealth === player.maxBedHealth;
+            raidResourcesBtn.disabled = gameOver || ai.bedDestroyed;
+
+            if (ai.bedDestroyed) {
+                attackEnemyBedBtn.textContent = "Enemy Bed Destroyed";
+                if (ai.health <= 0) {
+                     attackEnemyPlayerBtn.textContent = "Enemy Player Defeated";
+                     attackEnemyPlayerBtn.disabled = true;
+                } else {
+                     attackEnemyPlayerBtn.textContent = `Attack Player (${COSTS.ATTACK_PLAYER.iron} Iron, ${COSTS.ATTACK_PLAYER.gold} Gold)`;
+                }
+            } else {
+                attackEnemyBedBtn.textContent = `Attack Bed (${COSTS.ATTACK_BED.iron} Iron)`;
+                attackEnemyPlayerBtn.textContent = `Attack Player (${COSTS.ATTACK_PLAYER.iron} Iron, ${COSTS.ATTACK_PLAYER.gold} Gold)`; // Reset text if AI bed is not destroyed
+            }
+             if (player.bedDestroyed) {
+                fortifyBedBtn.textContent = "Your Bed Destroyed";
+                fortifyBedBtn.disabled = true;
+            } else {
+                 fortifyBedBtn.textContent = `Fortify Bed (${COSTS.FORTIFY_BED.iron} Iron, ${COSTS.FORTIFY_BED.gold} Gold)`;
+            }
+
+            gameLogEl.innerHTML = '';
+            gameLog.slice(-MAX_LOG_MESSAGES).forEach(msg => {
+                const msgDiv = document.createElement('div');
+                msgDiv.classList.add('log-message');
+                if (msg.type === 'player') msgDiv.classList.add('log-player');
+                else if (msg.type === 'ai') msgDiv.classList.add('log-ai');
+                else if (msg.type === 'system') msgDiv.classList.add('log-system');
+                else if (msg.type === 'resource') msgDiv.classList.add('log-resource');
+                msgDiv.textContent = msg.text;
+                gameLogEl.appendChild(msgDiv);
+            });
+            gameLogEl.scrollTop = gameLogEl.scrollHeight;
+        }
+
+        function getHealthColor(current, max) {
+            const percentage = current / max;
+            if (percentage > 0.66) return '#48bb78'; // Green
+            if (percentage > 0.33) return '#ecc94b'; // Yellow
+            return '#f56565'; // Red
+        }
+
+        function addLog(text, type = 'system') {
+            gameLog.push({ text, type });
+            if (gameLog.length > MAX_LOG_MESSAGES * 2) {
+                gameLog = gameLog.slice(gameLog.length - MAX_LOG_MESSAGES);
+            }
+            updateUI();
+        }
+
+        function resourceGeneration() {
+            if (gameOver) return;
+            player.iron += 2;
+            player.gold += 1;
+            ai.iron += 2;
+            ai.gold += 1;
+            addLog('+2 Iron, +1 Gold for both sides.', 'resource');
+            // updateUI(); // Called by addLog
+        }
+
+        attackEnemyBedBtn.addEventListener('click', () => {
+            if (player.iron >= COSTS.ATTACK_BED.iron && !ai.bedDestroyed) {
+                player.iron -= COSTS.ATTACK_BED.iron;
+                ai.bedHealth -= PLAYER_DAMAGE.BED_ATTACK;
+                addLog(`Player attacks CPU's bed for ${PLAYER_DAMAGE.BED_ATTACK} damage!`, 'player');
+                if (ai.bedHealth <= 0) {
+                    ai.bedHealth = 0;
+                    ai.bedDestroyed = true;
+                    document.getElementById('ai-section').classList.add('opacity-50');
+                    addLog("CPU's bed has been destroyed!", 'system');
+                }
+                // updateUI(); // Called by addLog
+                checkGameOver();
+                if (!gameOver) triggerAiTurn();
+            }
+        });
+
+        attackEnemyPlayerBtn.addEventListener('click', () => {
+            if (ai.bedDestroyed && player.iron >= COSTS.ATTACK_PLAYER.iron && player.gold >= COSTS.ATTACK_PLAYER.gold && ai.health > 0) {
+                player.iron -= COSTS.ATTACK_PLAYER.iron;
+                player.gold -= COSTS.ATTACK_PLAYER.gold;
+                // FIX 1: Target AI's health, not player's health
+                ai.health -= PLAYER_DAMAGE.PLAYER_ATTACK;
+                addLog(`Player attacks CPU player for ${PLAYER_DAMAGE.PLAYER_ATTACK} damage!`, 'player');
+                if (ai.health <= 0) {
+                    ai.health = 0;
+                    addLog("CPU player has been defeated!", 'system');
+                }
+                // updateUI(); // Called by addLog
+                checkGameOver();
+                 if (!gameOver) triggerAiTurn();
+            }
+        });
+
+        fortifyBedBtn.addEventListener('click', () => {
+            if (!player.bedDestroyed && player.iron >= COSTS.FORTIFY_BED.iron && player.gold >= COSTS.FORTIFY_BED.gold && player.bedHealth < player.maxBedHealth) {
+                player.iron -= COSTS.FORTIFY_BED.iron;
+                player.gold -= COSTS.FORTIFY_BED.gold;
+                player.bedHealth += FORTIFY_HEAL_AMOUNT;
+                if (player.bedHealth > player.maxBedHealth) {
+                    player.bedHealth = player.maxBedHealth;
+                }
+                addLog(`Player fortifies their bed, restoring ${FORTIFY_HEAL_AMOUNT} health.`, 'player');
+                // updateUI(); // Called by addLog
+                 if (!gameOver) triggerAiTurn();
+            }
+        });
+
+        raidResourcesBtn.addEventListener('click', () => {
+            if (!ai.bedDestroyed) { // Player can only raid if AI's bed is not destroyed
+                const ironStolen = Math.floor(ai.iron * RAID_PERCENTAGE.iron);
+                const goldStolen = Math.floor(ai.gold * RAID_PERCENTAGE.gold);
+
+                if (ironStolen > 0 || goldStolen > 0) {
+                    player.iron += ironStolen;
+                    ai.iron -= ironStolen;
+                    player.gold += goldStolen;
+                    ai.gold -= goldStolen;
+
+                    addLog(`Player raids CPU: +${ironStolen} Iron, +${goldStolen} Gold!`, 'player');
+                    if (ironStolen > 0 || goldStolen > 0) addLog(`CPU loses: -${ironStolen} Iron, -${goldStolen} Gold.`, 'ai');
+                } else {
+                    addLog(`Player attempts to raid CPU, but CPU has little to steal.`, 'player');
+                }
+                // updateUI(); // Called by addLog
+                checkGameOver();
+                 if (!gameOver) triggerAiTurn();
+            } else {
+                 addLog("You cannot raid resources after the enemy bed is destroyed.", 'system');
+            }
+        });
+
+        resetGameBtn.addEventListener('click', initializeGame);
+
+        resetGameOverBtns.forEach(button => {
+            button.addEventListener('click', () => {
+                winScreenEl.classList.add('hidden');
+                loseScreenEl.classList.add('hidden');
+                gameContainerEl.classList.remove('hidden');
+                initializeGame();
+            });
+        });
+
+
+        function triggerAiTurn() {
+            if (gameOver) return;
+            attackEnemyBedBtn.disabled = true;
+            attackEnemyPlayerBtn.disabled = true;
+            fortifyBedBtn.disabled = true;
+            raidResourcesBtn.disabled = true;
+
+            addLog("CPU is thinking...", "ai");
+            setTimeout(aiTurn, 1500);
+        }
+
+        function aiTurn() {
+            if (gameOver) return;
+            let actionTaken = false;
+
+            // AI Logic (Priorities)
+            // 1. Attack Player's Bed if not destroyed and AI can afford
+            if (!player.bedDestroyed && ai.iron >= COSTS.ATTACK_BED.iron) {
+                ai.iron -= COSTS.ATTACK_BED.iron;
+                player.bedHealth -= AI_DAMAGE.BED_ATTACK;
+                addLog(`CPU attacks Player's bed for ${AI_DAMAGE.BED_ATTACK} damage!`, 'ai');
+                if (player.bedHealth <= 0) {
+                    player.bedHealth = 0;
+                    player.bedDestroyed = true;
+                    document.getElementById('player-section').classList.add('opacity-50');
+                    addLog("Player's bed has been destroyed!", 'system');
+                }
+                actionTaken = true;
+            }
+            // 2. Attack Player if Player's bed is destroyed, AI can afford, and Player has health
+            else if (player.bedDestroyed && player.health > 0 && ai.iron >= COSTS.ATTACK_PLAYER.iron && ai.gold >= COSTS.ATTACK_PLAYER.gold) {
+                ai.iron -= COSTS.ATTACK_PLAYER.iron;
+                ai.gold -= COSTS.ATTACK_PLAYER.gold;
+                player.health -= AI_DAMAGE.PLAYER_ATTACK;
+                addLog(`CPU attacks Player for ${AI_DAMAGE.PLAYER_ATTACK} damage!`, 'ai');
+                if (player.health <= 0) {
+                    player.health = 0;
+                    addLog("Player has been defeated!", 'system');
+                }
+                actionTaken = true;
+            }
+            // FIX 2: AI raids if Player's bed is NOT destroyed (consistent with player's raid logic)
+            // 3. Raid Resources (Increased chance if player has resources) - Only if Player's bed is not destroyed
+            else if (!player.bedDestroyed && Math.random() < 0.35 && (player.iron > 10 || player.gold > 5)) {
+                const ironStolen = Math.floor(player.iron * RAID_PERCENTAGE.iron);
+                const goldStolen = Math.floor(player.gold * RAID_PERCENTAGE.gold);
+
+                if (ironStolen > 0 || goldStolen > 0) {
+                    ai.iron += ironStolen;
+                    player.iron -= ironStolen;
+                    ai.gold += goldStolen;
+                    player.gold -= goldStolen;
+                    addLog(`CPU raids Player: +${ironStolen} Iron, +${goldStolen} Gold!`, 'ai');
+                    addLog(`Player loses: -${ironStolen} Iron, -${goldStolen} Gold.`, 'player');
+                    actionTaken = true;
+                } else {
+                     addLog("CPU attempts to raid Player, but Player has little to steal.", 'ai');
+                     actionTaken = true;
+                }
+            }
+            // 4. Fortify own bed (only if AI's bed is not destroyed, damaged, and AI can afford)
+            else if (!ai.bedDestroyed && ai.bedHealth < (ai.maxBedHealth * 0.5) && ai.iron >= COSTS.AI_FORTIFY_BED.iron && Math.random() < 0.6) {
+                 ai.iron -= COSTS.AI_FORTIFY_BED.iron; // AI Fortify might only cost iron for simplicity
+                 ai.bedHealth += FORTIFY_HEAL_AMOUNT;
+                 if (ai.bedHealth > ai.maxBedHealth) ai.bedHealth = ai.maxBedHealth;
+                 addLog(`CPU fortifies its bed, restoring ${FORTIFY_HEAL_AMOUNT} health.`, 'ai');
+                 actionTaken = true;
+            }
+
+            if (!actionTaken) {
+                addLog("CPU gathers resources.", 'ai');
+            }
+
+            // updateUI(); // Called by addLog in most cases, or by the last addLog if no action.
+            // However, it's safer to have one explicit updateUI before checkGameOver after all AI logic.
+            updateUI(); // Ensures UI is current before checking game over or enabling player buttons
+            checkGameOver();
+
+            if (!gameOver) {
+                // updateUI() will correctly set these based on game state.
+                // No need to manually set them here again if updateUI() is comprehensive.
+                // attackEnemyBedBtn.disabled = player.iron < COSTS.ATTACK_BED.iron || ai.bedDestroyed;
+                // attackEnemyPlayerBtn.disabled = !ai.bedDestroyed || player.iron < COSTS.ATTACK_PLAYER.iron || player.gold < COSTS.ATTACK_PLAYER.gold || ai.health <= 0;
+                // fortifyBedBtn.disabled = player.bedDestroyed || player.iron < COSTS.FORTIFY_BED.iron || player.gold < COSTS.FORTIFY_BED.gold || player.bedHealth === player.maxBedHealth;
+                // raidResourcesBtn.disabled = ai.bedDestroyed;
+                // updateUI(); // This call was a bit redundant here, the one above is sufficient before player turn.
+            }
+        }
+
+        function checkGameOver() {
+            if (gameOver) {
+                return true;
+            }
+
+            if (player.bedDestroyed && player.health <= 0) {
+                addLog("CPU WINS! Game Over.", 'system');
+                gameOver = true;
+                showLoseScreen();
+            }
+            else if (ai.bedDestroyed && ai.health <= 0) {
+                addLog("PLAYER WINS! Game Over.", 'system');
+                gameOver = true;
+                showWinScreen();
+            }
+
+            if (gameOver) {
+                attackEnemyBedBtn.disabled = true;
+                attackEnemyPlayerBtn.disabled = true;
+                fortifyBedBtn.disabled = true;
+                raidResourcesBtn.disabled = true;
+                clearInterval(resourceInterval);
+            }
+            return gameOver;
+        }
+
+        function showWinScreen() {
+            gameContainerEl.classList.add('hidden');
+            winScreenEl.classList.remove('hidden');
+        }
+
+        function showLoseScreen() {
+            gameContainerEl.classList.add('hidden');
+            loseScreenEl.classList.remove('hidden');
+        }
+
+
+        function initializeGame() {
+            player = { health: 100, bedHealth: 100, maxBedHealth: 100, iron: 50, gold: 10, bedDestroyed: false };
+            ai = { health: 100, bedHealth: 100, maxBedHealth: 100, iron: 50, gold: 10, bedDestroyed: false };
+            gameOver = false; // Reset gameOver state FIRST
+
+            // Clear previous game log and add initial message
+            gameLog = [];
+            addLog("Game Reset! Protect your bed!", 'system'); // This will call updateUI
+
+            document.getElementById('player-section').classList.remove('opacity-50');
+            document.getElementById('ai-section').classList.remove('opacity-50');
+
+            winScreenEl.classList.add('hidden');
+            loseScreenEl.classList.add('hidden');
+            gameContainerEl.classList.remove('hidden');
+
+            // updateUI(); // updateUI is called by addLog above. If addLog is removed, uncomment this.
+
+            if (resourceInterval) {
+                clearInterval(resourceInterval);
+            }
+            resourceInterval = setInterval(resourceGeneration, 5000);
+            
+            // AI gets a "free" turn after setup, or game feels stalled initially.
+            // Or, you could let player make the first actual move.
+            // For now, keeping the AI's initial turn.
+            // To ensure player buttons are correctly enabled/disabled after reset before AI thinks:
+            updateUI(); // Explicit call to set initial button states correctly
+            triggerAiTurn(); 
+        }
+
+        initializeGame();
+    </script>
+</body>
+</html>

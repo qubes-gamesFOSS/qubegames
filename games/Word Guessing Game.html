@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<!-- saved from url=(0059)https://qube-gaming-website.glitch.me/games/word-guess.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <script async="" src="./Word Guessing Game_files/gtm.js.download"></script><script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-T4WN9BKQ');</script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Guessing Game</title>
+    <link href="./Word Guessing Game_files/css2" rel="stylesheet">
+    <script>
+        let words = ['flower', 'fabric', 'cloth', 'canvas', 'paint', 'pencil', 'paper', 'water', 'pizza', 'watch', 'phone', 'finance', 'business', 'bag', 'list', 'chili', 'cooler', 'colors', 'chocolate', 'website', 'laptop', 'clock', 'radio', 'teacher', 'school', 'light', 'glasses', 'settings', 'history', 'browser', 'navigator', 'compass', 'doctor', 'tables', 'chairs', 'photos', 'audio', 'mailbox', 'pillow'];
+        let wordToGuess = words[Math.floor(Math.random() * words.length)];
+        let displayedLetters = wordToGuess.substring(0, 3);
+    </script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            transition: background-color 0.5s ease;
+        }
+
+        body.dark-mode {
+            background-color: #222;
+        }
+
+        #game-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: background-color 0.5s ease, box-shadow 0.5s ease;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        #game-container.dark-mode {
+            background-color: #333;
+            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+            transition: color 0.5s ease;
+        }
+
+        h1.dark-mode {
+            color: #eee;
+        }
+
+        p {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #555;
+            transition: color 0.5s ease;
+        }
+
+        p.dark-mode {
+            color: #ccc;
+        }
+
+        input[type="text"] {
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-right: 10px;
+            width: calc(100% - 140px);
+            max-width: 300px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+        }
+
+        input[type="text"].dark-mode {
+            background-color: #444;
+            border-color: #666;
+            color: #eee;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #feedback {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+            transition: color 0.5s ease;
+        }
+
+        #feedback.dark-mode {
+            color: #eee;
+        }
+
+        .correct {
+            color: green;
+        }
+
+        .incorrect {
+            color: red;
+        }
+
+        #reset-button {
+            margin-top: 20px;
+            padding: 10px 15px;
+            font-size: 14px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #reset-button:hover {
+            background-color: #007ba7;
+        }
+
+        #toggle-dark-mode {
+            margin-top: 20px;
+            padding: 10px 15px;
+            font-size: 14px;
+            background-color: #222;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #toggle-dark-mode:hover {
+            background-color: #111;
+        }
+
+        #toggle-dark-mode.light-mode {
+            background-color: #eee;
+            color: #222;
+        }
+
+        #toggle-dark-mode.light-mode:hover {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1 id="game-title">Word Guessing Game</h1>
+        <p id="instructions">Guess the word. It starts with: <span id="displayed-letters">col</span></p>
+        <input type="text" id="guessInput" placeholder="Enter your guess">
+        <button id="checkButton">Check Guess</button>
+        <p id="feedback"></p>
+        <button id="reset-button" style="display:none;">Play Again</button>
+        <button id="toggle-dark-mode">Dark Mode</button>
+    </div>
+
+    <script>
+        const guessInput = document.getElementById("guessInput");
+        const checkButton = document.getElementById("checkButton");
+        const feedback = document.getElementById("feedback");
+        const resetButton = document.getElementById("reset-button");
+        const displayedLettersSpan = document.getElementById("displayed-letters");
+        const gameContainer = document.getElementById("game-container");
+        const gameTitle = document.getElementById("game-title");
+        const instructionsText = document.getElementById("instructions");
+        const body = document.body;
+        const toggleDarkModeButton = document.getElementById("toggle-dark-mode");
+
+        displayedLettersSpan.textContent = displayedLetters;
+
+        let isDarkMode = false;
+
+        toggleDarkModeButton.addEventListener("click", () => {
+            isDarkMode = !isDarkMode;
+            body.classList.toggle("dark-mode", isDarkMode);
+            gameContainer.classList.toggle("dark-mode", isDarkMode);
+            gameTitle.classList.toggle("dark-mode", isDarkMode);
+            instructionsText.classList.toggle("dark-mode", isDarkMode);
+            guessInput.classList.toggle("dark-mode", isDarkMode);
+
+            if (isDarkMode) {
+                toggleDarkModeButton.textContent = "Light Mode";
+                toggleDarkModeButton.classList.remove("light-mode");
+            } else {
+                toggleDarkModeButton.textContent = "Dark Mode";
+                toggleDarkModeButton.classList.add("light-mode");
+            }
+        });
+
+        checkButton.addEventListener("click", () => {
+            const guess = guessInput.value.toLowerCase();
+
+            if (guess === wordToGuess) {
+                feedback.textContent = "Correct! You guessed the word!";
+                feedback.className = "correct";
+                checkButton.style.display = "none";
+                guessInput.style.display = "none";
+                resetButton.style.display = "inline-block";
+            } else {
+                feedback.textContent = "Incorrect! Try again.";
+                feedback.className = "incorrect";
+                guessInput.value = "";
+            }
+        });
+
+        resetButton.addEventListener("click", () => {
+            wordToGuess = words[Math.floor(Math.random() * words.length)];
+            displayedLetters = wordToGuess.substring(0, 3);
+            displayedLettersSpan.textContent = displayedLetters;
+            feedback.textContent = "";
+            feedback.className = "";
+            guessInput.value = "";
+            checkButton.style.display = "inline-block";
+            guessInput.style.display = "inline-block";
+            resetButton.style.display = "none";
+        });
+
+        guessInput.addEventListener("keypress", (event) => {
+            if (event.key === "Enter") {
+                checkButton.click();
+            }
+        });
+    </script>
+
+
+</body></html>
